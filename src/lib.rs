@@ -138,9 +138,6 @@ where
 }
 
 
-pub use matrix::calculate as calculate_matrix;
-
-
 #[cfg(test)]
 pub(crate) mod test {
     type Ratio = (i64, i64);
@@ -211,7 +208,7 @@ pub(crate) mod test {
                 [0.21264932, 0.71516913, 0.07218152],
                 [0.019331757, 0.119194806, 0.9503901]
             ]),
-            super::calculate_matrix(&white(f).to_xyz(), &primaries(f))
+            super::matrix::calculate(&white(f).to_xyz(), &primaries(f))
         );
     }
 
@@ -237,7 +234,7 @@ pub(crate) mod test {
                     f((233582065, 245774952))
                 ],
             ]),
-            super::calculate_matrix(&white(f).to_xyz(), &primaries(f))
+            super::matrix::calculate(&white(f).to_xyz(), &primaries(f))
         );
     }
 
