@@ -1,3 +1,14 @@
+//! Functions for calculating RGB↔XYZ conversion matrices and performing basic
+//! matrix manipulation.
+//!
+//! Specifically, [`calculate`] generates the RGB→XYZ change of basis matrix
+//! from chromacities of the reference white point and red, green and blue
+//! primary colours.  Inversing that matrix with [`inversed_copy`] constructs
+//! change of basis in the opposite direction and transposing with
+//! [`transposed_copy`] results in a matrix whose rows are XYZ coordinates of
+//! the primary colours.
+
+
 /// Trait for scalar type used in calculations.
 ///
 /// An implementation of this trait is provided to all types which satisfy this

@@ -1,3 +1,67 @@
+//! RGB colour system derivation routines.
+//!
+//! Functions for deriving RGB→XYZ and XYZ→RGB conversion matrices for given RGB
+//! colour system (such as sRGB colour space).  The calculations are performed
+//! from the definition of such system provided in the form of chromacities of
+//! the reference white point and the red, green and blue primaries.
+//! Alternatively, constructions from XYZ coordinates of primaries is also
+//! available.
+//!
+//! The crate supports arithmetic with rational and big integer types such that
+//! the calculations can be performed without any loss of precision if desired.
+//! So long as a type implements the four basic arithmetic operations, it can be
+//! used with this library.  For example, `f32`, `num::Rational64` and
+//! `num::BigRational` can all be used.
+//!
+//! # Example
+//!
+//! ```
+//! type Scalar = num::BigRational;
+//! type Chromacity = rgb_derivation::Chromacity<Scalar>;
+//!
+//! fn scalar(numer: i64, denom: i64) -> num::BigRational {
+//!     num::BigRational::new(numer.into(), denom.into())
+//! }
+//!
+//! fn chromacity(x: (i64, i64), y: (i64, i64)) -> Chromacity {
+//!     Chromacity::new(scalar(x.0, x.1), scalar(y.0, y.1)).unwrap()
+//! }
+//!
+//! let white_xy = chromacity((31, 100), (33, 100));
+//! let primaries_xy = [
+//!     chromacity((64, 100), (33, 100)),
+//!     chromacity((30, 100), (60, 100)),
+//!     chromacity((15, 100), (6, 100)),
+//! ];
+//!
+//! let white_xyz = white_xy.to_xyz();
+//! let matrix =
+//!     rgb_derivation::matrix::calculate(&white_xyz, &primaries_xy).unwrap();
+//! let inverse = rgb_derivation::matrix::inversed_copy(&matrix).unwrap();
+//! let primaries_xyz = rgb_derivation::matrix::transposed_copy(&matrix);
+//!
+//! assert_eq!([scalar(31, 33), scalar(1, 1), scalar(12, 11)], white_xyz);
+//! assert_eq!([
+//!     [scalar(1088, 2739), scalar(17, 83), scalar(17, 913)],
+//!     [scalar(  30,   83), scalar(60, 83), scalar(10,  83)],
+//!     [scalar(  15,   83), scalar( 6, 83), scalar(79,  83)]
+//! ], primaries_xyz);
+//! assert_eq!([
+//!     [scalar(1088, 2739), scalar(30, 83), scalar(15, 83)],
+//!     [scalar(  17,   83), scalar(60, 83), scalar( 6, 83)],
+//!     [scalar(  17,  913), scalar(10, 83), scalar(79, 83)]
+//! ], matrix);
+//! assert_eq!([
+//!     [scalar( 286,  85), scalar(-407,  255), scalar(-44,  85)],
+//!     [scalar(-863, 900), scalar(5011, 2700), scalar( 37, 900)],
+//!     [scalar(   1,  18), scalar( -11,   54), scalar( 19,  18)]
+//! ], inverse);
+//! ```
+//!
+//! (Note: if you need matrices for the sRGB colour space, the [`srgb`
+//! crate](https://crates.io/crates/srgb) provides them along with gamma
+//! functions needed to properly handle sRGB)
+
 pub mod matrix;
 
 
@@ -29,6 +93,9 @@ impl<K> Chromacity<K> {
 }
 
 impl<K: num_traits::Signed> Chromacity<K> {
+    /// Constructs new Chromacity from given (x, y) coordinates.
+    ///
+    /// Returns an error if either of the coordinate is non-positive.
     pub fn new(x: K, y: K) -> Result<Self, Error<K>> {
         if !x.is_positive() || !y.is_positive() {
             Err(Error::InvalidChromacity(x, y))
@@ -37,6 +104,11 @@ impl<K: num_traits::Signed> Chromacity<K> {
         }
     }
 
+    /// Constructs new Chromacity from given (x, y) coordinates.
+    ///
+    /// Does not check whether the coordinates are positive.  If they aren’t,
+    /// other methods (e.g. [`Chromacity::to_xyz`] may result in undefined
+    /// behaviour.
     pub unsafe fn new_unchecked(x: K, y: K) -> Self { Self(x, y) }
 }
 
@@ -44,8 +116,8 @@ impl<K: matrix::Scalar> Chromacity<K>
 where
     for<'x> &'x K: num_traits::RefNum<K>,
 {
-    /// Returns XYZ coordinates of a colour with given chromacity and luminosity
-    /// (the Y coordinate) equal one.
+    /// Returns XYZ coordinates of a colour with given chromacity.  Assumes
+    /// luminosity (the Y coordinate) equal one.
     ///
     /// # Example
     ///
