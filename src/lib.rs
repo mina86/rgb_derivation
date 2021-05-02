@@ -17,21 +17,21 @@
 //!
 //! ```
 //! type Scalar = num::BigRational;
-//! type Chromacity = rgb_derivation::Chromacity<Scalar>;
+//! type Chromaticity = rgb_derivation::Chromaticity<Scalar>;
 //!
 //! fn scalar(numer: i64, denom: i64) -> num::BigRational {
 //!     num::BigRational::new(numer.into(), denom.into())
 //! }
 //!
-//! fn chromacity(x: (i64, i64), y: (i64, i64)) -> Chromacity {
-//!     Chromacity::new(scalar(x.0, x.1), scalar(y.0, y.1)).unwrap()
+//! fn chromaticity(x: (i64, i64), y: (i64, i64)) -> Chromaticity {
+//!     Chromaticity::new(scalar(x.0, x.1), scalar(y.0, y.1)).unwrap()
 //! }
 //!
-//! let white_xy = chromacity((31, 100), (33, 100));
+//! let white_xy = chromaticity((31, 100), (33, 100));
 //! let primaries_xy = [
-//!     chromacity((64, 100), (33, 100)),
-//!     chromacity((30, 100), (60, 100)),
-//!     chromacity((15, 100), (6, 100)),
+//!     chromaticity((64, 100), (33, 100)),
+//!     chromaticity((30, 100), (60, 100)),
+//!     chromaticity((15, 100), (6, 100)),
 //! ];
 //!
 //! let white_xyz = white_xy.to_xyz();
@@ -68,10 +68,10 @@ pub mod matrix;
 /// Possible errors which can occur when performing calculations.
 #[derive(PartialEq, Eq, Debug)]
 pub enum Error<K> {
-    /// Error returned when trying to create [`Chromacity`] with either of the
+    /// Error returned when trying to create [`Chromaticity`] with either of the
     /// coordinates being a non-positive number.  The two arguments are the
     /// coordinates which caused the issue.
-    InvalidChromacity(K, K),
+    InvalidChromaticity(K, K),
     /// Error returned if provided reference white point has non-positive
     /// luminosity (the `Y` component).  The argument are the XYZ coordinates of
     /// the white point which caused the issue.
@@ -83,40 +83,40 @@ pub enum Error<K> {
 }
 
 
-/// A colour chromacity represented as `(x, y)` coordinates.
+/// A colour chromaticity represented as `(x, y)` coordinates.
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub struct Chromacity<K>(K, K);
+pub struct Chromaticity<K>(K, K);
 
-impl<K> Chromacity<K> {
+impl<K> Chromaticity<K> {
     pub fn x(&self) -> &K { &self.0 }
     pub fn y(&self) -> &K { &self.1 }
 }
 
-impl<K: num_traits::Signed> Chromacity<K> {
-    /// Constructs new Chromacity from given (x, y) coordinates.
+impl<K: num_traits::Signed> Chromaticity<K> {
+    /// Constructs new Chromaticity from given (x, y) coordinates.
     ///
     /// Returns an error if either of the coordinate is non-positive.
     pub fn new(x: K, y: K) -> Result<Self, Error<K>> {
         if !x.is_positive() || !y.is_positive() {
-            Err(Error::InvalidChromacity(x, y))
+            Err(Error::InvalidChromaticity(x, y))
         } else {
             Ok(Self(x, y))
         }
     }
 
-    /// Constructs new Chromacity from given (x, y) coordinates.
+    /// Constructs new Chromaticity from given (x, y) coordinates.
     ///
     /// Does not check whether the coordinates are positive.  If they aren’t,
-    /// other methods (e.g. [`Chromacity::to_xyz`] may result in undefined
+    /// other methods (e.g. [`Chromaticity::to_xyz`] may result in undefined
     /// behaviour.
     pub unsafe fn new_unchecked(x: K, y: K) -> Self { Self(x, y) }
 }
 
-impl<K: matrix::Scalar> Chromacity<K>
+impl<K: matrix::Scalar> Chromaticity<K>
 where
     for<'x> &'x K: num_traits::RefNum<K>,
 {
-    /// Returns XYZ coordinates of a colour with given chromacity.  Assumes
+    /// Returns XYZ coordinates of a colour with given chromaticity.  Assumes
     /// luminosity (the Y coordinate) equal one.
     ///
     /// # Example
@@ -126,7 +126,7 @@ where
     ///
     /// let one = num::rational::Ratio::new(1i64, 1i64);
     /// let one_third = num::rational::Ratio::new(1i64, 3i64);
-    /// let e = Chromacity::new(one_third, one_third).unwrap().to_xyz();
+    /// let e = Chromaticity::new(one_third, one_third).unwrap().to_xyz();
     /// assert_eq!([one, one, one], e);
     /// ```
     pub fn to_xyz(&self) -> [K; 3] {
@@ -154,30 +154,30 @@ pub(crate) mod test {
         num::rational::Ratio::new(num.0.into(), num.1.into())
     }
 
-    pub(crate) fn chromacity<K>(
+    pub(crate) fn chromaticity<K>(
         f: &impl Fn(Ratio) -> K,
         x: Ratio,
         y: Ratio,
-    ) -> super::Chromacity<K>
+    ) -> super::Chromaticity<K>
     where
         K: std::fmt::Debug + num_traits::Signed, {
-        super::Chromacity::new(f(x), f(y)).unwrap()
+        super::Chromaticity::new(f(x), f(y)).unwrap()
     }
 
 
-    fn white<K>(f: &impl Fn((i64, i64)) -> K) -> super::Chromacity<K>
+    fn white<K>(f: &impl Fn((i64, i64)) -> K) -> super::Chromaticity<K>
     where
         K: std::fmt::Debug + num_traits::Signed, {
-        chromacity(f, (312713, 1000000), (41127, 125000))
+        chromaticity(f, (312713, 1000000), (41127, 125000))
     }
 
-    fn primaries<K>(f: &impl Fn((i64, i64)) -> K) -> [super::Chromacity<K>; 3]
+    fn primaries<K>(f: &impl Fn((i64, i64)) -> K) -> [super::Chromaticity<K>; 3]
     where
         K: std::fmt::Debug + num_traits::Signed, {
         [
-            chromacity(f, (64, 100), (33, 100)),
-            chromacity(f, (30, 100), (60, 100)),
-            chromacity(f, (15, 100), (06, 100)),
+            chromaticity(f, (64, 100), (33, 100)),
+            chromaticity(f, (30, 100), (60, 100)),
+            chromaticity(f, (15, 100), (06, 100)),
         ]
     }
 

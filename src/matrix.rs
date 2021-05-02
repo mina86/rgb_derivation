@@ -39,8 +39,8 @@ pub type Matrix<K> = [[K; 3]; 3];
 ///
 /// The matrix is calculated from XYZ coordinates of a reference white point and
 /// chromacities of the three primary colours (red, green and blue).  (Note that
-/// [`super::Chromacity::to_xyz`] function allows conversion from
-/// chromacity to XYZ coordinates thus the function may be used when only x and
+/// [`super::Chromaticity::to_xyz`] function allows conversion from
+/// chromaticity to XYZ coordinates thus the function may be used when only x and
 /// y coordinates of the white point are known).
 ///
 /// The result is a three-by-three matrix M such that multiplying it by
@@ -59,11 +59,11 @@ pub type Matrix<K> = [[K; 3]; 3];
 /// ```
 /// use rgb_derivation::*;
 ///
-/// let white = Chromacity::new(1.0_f32 / 3.0, 1.0 / 3.0).unwrap();
+/// let white = Chromaticity::new(1.0_f32 / 3.0, 1.0 / 3.0).unwrap();
 /// let primaries = [
-///     Chromacity::new(0.735_f32, 0.265_f32).unwrap(),
-///     Chromacity::new(0.274_f32, 0.717_f32).unwrap(),
-///     Chromacity::new(0.167_f32, 0.009_f32).unwrap(),
+///     Chromaticity::new(0.735_f32, 0.265_f32).unwrap(),
+///     Chromaticity::new(0.274_f32, 0.717_f32).unwrap(),
+///     Chromaticity::new(0.167_f32, 0.009_f32).unwrap(),
 /// ];
 ///
 /// let matrix    = matrix::calculate(&white.to_xyz(), &primaries).unwrap();
@@ -88,7 +88,7 @@ pub type Matrix<K> = [[K; 3]; 3];
 /// ```
 pub fn calculate<K: Scalar>(
     white: &[K; 3],
-    primaries: &[super::Chromacity<K>; 3],
+    primaries: &[super::Chromaticity<K>; 3],
 ) -> Result<Matrix<K>, super::Error<K>>
 where
     for<'x> &'x K: num_traits::RefNum<K>, {

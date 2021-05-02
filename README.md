@@ -30,10 +30,10 @@ which converts an sRGB colour into other colour spaces:
 
 ```
 type Scalar = num::rational::Ratio<i128>;
-type Chromacity = rgb_derivation::Chromacity<Scalar>;
+type Chromaticity = rgb_derivation::Chromaticity<Scalar>;
 
-fn chromacity(x: (i128, i128), y: (i128, i128)) -> Chromacity {
-    Chromacity::new(Scalar::new(x.0, x.1), Scalar::new(y.0, y.1)).unwrap()
+fn chromaticity(x: (i128, i128), y: (i128, i128)) -> Chromaticity {
+    Chromaticity::new(Scalar::new(x.0, x.1), Scalar::new(y.0, y.1)).unwrap()
 }
 
 fn print_vector(header: &str, vector: &[Scalar; 3]) {
@@ -79,11 +79,11 @@ fn print_matrix(header: &str, matrix: &[[Scalar; 3]; 3]) {
 }
 
 fn main() {
-    let white_xy = chromacity((312713, 1000000), (329016, 1000000));
+    let white_xy = chromaticity((312713, 1000000), (329016, 1000000));
     let primaries_xy = [
-        chromacity((64, 100), (33, 100)),
-        chromacity((30, 100), (60, 100)),
-        chromacity((15, 100), (6, 100)),
+        chromaticity((64, 100), (33, 100)),
+        chromaticity((30, 100), (60, 100)),
+        chromaticity((15, 100), (6, 100)),
     ];
 
     let white_xyz = white_xy.to_xyz();
