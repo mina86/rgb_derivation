@@ -112,35 +112,6 @@ impl<K: num_traits::Signed> Chromacity<K> {
     pub unsafe fn new_unchecked(x: K, y: K) -> Self { Self(x, y) }
 }
 
-impl<K: matrix::Scalar + num_traits::FromPrimitive> Chromacity<K>
-where
-    for<'x> &'x K: num_traits::RefNum<K> {
-    /// Returns (u′, v′) coordinates of the chromacity.
-    ///
-    /// **Panics** if `K` cannot be constructed from small primitive integers,
-    /// i.e. when `K::from_i32` returns `None`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use rgb_derivation::*;
-    ///
-    /// let one_third = num::rational::Ratio::new(1i64, 3i64);
-    /// let uv = Chromacity::new(one_third, one_third).unwrap().to_uv();
-    /// assert_eq!((
-    ///     num::rational::Ratio::new(4, 19),
-    ///     num::rational::Ratio::new(9, 19)
-    /// ), uv);
-    /// ```
-    pub fn to_uv(&self) -> (K, K) {
-        let int = |n| K::from_i32(n).unwrap();
-        let denom = int(-2) * self.x() + int(12) * self.y() + int(3);
-        let u = int(4) * self.x() / &denom;
-        let v = int(9) * self.y() / denom;
-        (u, v)
-    }
-}
-
 impl<K: matrix::Scalar> Chromacity<K>
 where
     for<'x> &'x K: num_traits::RefNum<K>,
