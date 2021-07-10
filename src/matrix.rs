@@ -18,7 +18,7 @@
 //! matrix manipulation.
 //!
 //! Specifically, [`calculate`] generates the RGB→XYZ change of basis matrix
-//! from chromacities of the reference white point and red, green and blue
+//! from chromacicities of the reference white point and red, green and blue
 //! primary colours.  Inversing that matrix with [`inversed_copy`] constructs
 //! change of basis in the opposite direction and transposing with
 //! [`transposed_copy`] results in a matrix whose rows are XYZ coordinates of
@@ -54,7 +54,7 @@ pub type Matrix<K> = [[K; 3]; 3];
 /// spaces.
 ///
 /// The matrix is calculated from XYZ coordinates of a reference white point and
-/// chromacities of the three primary colours (red, green and blue).  (Note that
+/// chromacicities of the three primary colours (red, green and blue).  (Note that
 /// [`super::Chromaticity::to_xyz`] function allows conversion from
 /// chromaticity to XYZ coordinates thus the function may be used when only x and
 /// y coordinates of the white point are known).

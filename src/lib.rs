@@ -18,7 +18,7 @@
 //!
 //! Functions for deriving RGB→XYZ and XYZ→RGB conversion matrices for given RGB
 //! colour system (such as sRGB colour space).  The calculations are performed
-//! from the definition of such system provided in the form of chromacities of
+//! from the definition of such system provided in the form of chromacicities of
 //! the reference white point and the red, green and blue primaries.
 //! Alternatively, constructions from XYZ coordinates of primaries is also
 //! available.
