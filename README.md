@@ -21,14 +21,14 @@ dependency:
 
 ```toml
 [dependencies]
-rgb_derivation = "0.1"
+rgb_derivation = "0.2"
 ```
 
 With that dependency in place, it’s now simple to write an application
 which converts an sRGB colour into other colour spaces:
 
 
-```
+```rust
 type Scalar = num::rational::Ratio<i128>;
 type Chromaticity = rgb_derivation::Chromaticity<Scalar>;
 
