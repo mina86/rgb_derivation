@@ -124,6 +124,8 @@ impl<K: num_traits::Signed> Chromaticity<K> {
 
     /// Constructs new Chromaticity from given (x, y) coordinates.
     ///
+    /// # Safety
+    ///
     /// Does not check whether the coordinates are positive.  If they aren’t,
     /// other methods (e.g. [`Chromaticity::to_xyz`] may result in undefined
     /// behaviour.

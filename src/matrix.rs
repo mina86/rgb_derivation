@@ -151,13 +151,10 @@ where
 /// ], rgb_derivation::matrix::transposed(primaries));
 /// ```
 pub fn transposed<K>(mut matrix: Matrix<K>) -> Matrix<K> {
-    let m = matrix.as_mut_ptr();
     for (i, j) in [(0, 1), (0, 2), (1, 2)].iter().copied() {
-        // SAFETY: In each step, i != j therefore matrix[i] and matrix[j]
-        // are different rows.
-        let (a, b) =
-            unsafe { (&mut *m.offset(i as isize), &mut *m.offset(j as isize)) };
-        core::mem::swap(&mut a[j], &mut b[i]);
+        // Note: i < j
+        let (a, b) = matrix.split_at_mut(j);
+        core::mem::swap(&mut a[i][j], &mut b[0][i]);
     }
     matrix
 }
