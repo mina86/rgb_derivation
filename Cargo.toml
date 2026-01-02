@@ -1,7 +1,7 @@
 [package]
 name          = "rgb_derivation"
 description   = "Routines for calculation XYZ-RGB conversion matrices from white point and primaries"
-version       = "0.2.0"
+version       = "0.2.1"
 readme        = "README.md"
 categories    = ["graphics", "multimedia::images", "multimedia::video"]
 keywords      = ["rgb", "xyz", "color", "srgb"]
