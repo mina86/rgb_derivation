@@ -140,7 +140,7 @@ where
     /// # Example
     ///
     /// ```
-    /// use rgb_derivation::*;
+    /// use rgb_derivation::Chromaticity;
     ///
     /// let one = num::rational::Ratio::new(1i64, 1i64);
     /// let one_third = num::rational::Ratio::new(1i64, 3i64);

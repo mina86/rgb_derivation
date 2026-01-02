@@ -55,7 +55,7 @@ pub type Matrix<K> = [[K; 3]; 3];
 ///
 /// The matrix is calculated from XYZ coordinates of a reference white point and
 /// chromacicities of the three primary colours (red, green and blue).  (Note that
-/// [`super::Chromaticity::to_xyz`] function allows conversion from
+/// [`crate::Chromaticity::to_xyz`] function allows conversion from
 /// chromaticity to XYZ coordinates thus the function may be used when only x and
 /// y coordinates of the white point are known).
 ///
@@ -73,7 +73,7 @@ pub type Matrix<K> = [[K; 3]; 3];
 /// # Example
 ///
 /// ```
-/// use rgb_derivation::*;
+/// use rgb_derivation::{Chromaticity, matrix};
 ///
 /// let white = Chromaticity::new(1.0_f32 / 3.0, 1.0 / 3.0).unwrap();
 /// let primaries = [
@@ -104,12 +104,12 @@ pub type Matrix<K> = [[K; 3]; 3];
 /// ```
 pub fn calculate<K: Scalar>(
     white: &[K; 3],
-    primaries: &[super::Chromaticity<K>; 3],
-) -> Result<Matrix<K>, super::Error<K>>
+    primaries: &[crate::Chromaticity<K>; 3],
+) -> Result<Matrix<K>, crate::Error<K>>
 where
     for<'x> &'x K: num_traits::RefNum<K>, {
     if !white[1].is_positive() {
-        return Err(super::Error::InvalidWhitePoint(white.clone()));
+        return Err(crate::Error::InvalidWhitePoint(white.clone()));
     }
 
     // Calculate the transformation matrix as per
@@ -192,7 +192,7 @@ pub fn transposed_copy<K: Clone>(matrix: &Matrix<K>) -> Matrix<K> {
 /// ```
 pub fn inversed_copy<K>(
     matrix: &Matrix<K>,
-) -> Result<Matrix<K>, super::Error<K>>
+) -> Result<Matrix<K>, crate::Error<K>>
 where
     K: Scalar,
     for<'x> &'x K: num_traits::RefNum<K>, {
@@ -205,7 +205,7 @@ where
     // of the comatrix.
     let det: K = dot_product_with_column(&matrix[0], &comatrix_transposed, 0);
     if det.is_zero() {
-        return Err(super::Error::DegenerateMatrix);
+        return Err(crate::Error::DegenerateMatrix);
     }
 
     // https://en.wikipedia.org/wiki/Minor_(linear_algebra)#Inverse_of_a_matrix
@@ -336,9 +336,9 @@ where
 }
 
 #[test]
-fn test_inverses_ratio() { run_inverse_ratio_test(&super::test::new_ratio); }
+fn test_inverses_ratio() { run_inverse_ratio_test(&crate::test::new_ratio); }
 
 #[test]
 fn test_inverses_big_ratio() {
-    run_inverse_ratio_test(&super::test::new_big_ratio);
+    run_inverse_ratio_test(&crate::test::new_big_ratio);
 }
