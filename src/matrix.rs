@@ -30,7 +30,8 @@
 /// An implementation of this trait is provided to all types which satisfy this
 /// traits bounds.
 pub trait Scalar:
-    Clone + num_traits::NumRef + num_traits::NumAssignRef + num_traits::Signed {
+    Clone + num_traits::NumRef + num_traits::NumAssignRef + num_traits::Signed
+{
 }
 
 impl<T> Scalar for T where
@@ -107,7 +108,8 @@ pub fn calculate<K: Scalar>(
     primaries: &[crate::Chromaticity<K>; 3],
 ) -> Result<Matrix<K>, crate::Error<K>>
 where
-    for<'x> &'x K: num_traits::RefNum<K>, {
+    for<'x> &'x K: num_traits::RefNum<K>,
+{
     if !white[1].is_positive() {
         return Err(crate::Error::InvalidWhitePoint(white.clone()));
     }
@@ -193,7 +195,8 @@ pub fn inversed_copy<K>(
 ) -> Result<Matrix<K>, crate::Error<K>>
 where
     K: Scalar,
-    for<'x> &'x K: num_traits::RefNum<K>, {
+    for<'x> &'x K: num_traits::RefNum<K>,
+{
     let mut comatrix_transposed =
         make_matrix(|row, col| cofactor(matrix, col, row));
 
@@ -231,7 +234,8 @@ fn make_matrix<T>(f: impl Fn(usize, usize) -> T) -> [[T; 3]; 3] {
 /// Calculates a dot product of two 3-element vectors.
 fn dot_product<K: Scalar>(a: &[K; 3], b: &[K; 3]) -> K
 where
-    for<'x> &'x K: num_traits::RefNum<K>, {
+    for<'x> &'x K: num_traits::RefNum<K>,
+{
     &a[0] * &b[0] + &a[1] * &b[1] + &a[2] * &b[2]
 }
 
@@ -239,7 +243,8 @@ where
 fn dot_product_with_column<K>(a: &[K; 3], b: &Matrix<K>, col: usize) -> K
 where
     K: Scalar,
-    for<'x> &'x K: num_traits::RefNum<K>, {
+    for<'x> &'x K: num_traits::RefNum<K>,
+{
     &a[0] * &b[0][col] + &a[1] * &b[1][col] + &a[2] * &b[2][col]
 }
 
@@ -247,7 +252,8 @@ where
 /// Returns a cofactor of a 3✕3 matrix M, i.e. C_{row,col}.
 fn cofactor<K: Scalar>(matrix: &Matrix<K>, row: usize, col: usize) -> K
 where
-    for<'x> &'x K: num_traits::RefNum<K>, {
+    for<'x> &'x K: num_traits::RefNum<K>,
+{
     let rr = ((row == 0) as usize, 2 - (row == 2) as usize);
     let cc = ((col == 0) as usize, 2 - (col == 2) as usize);
     let ad = &matrix[rr.0][cc.0] * &matrix[rr.1][cc.1];
@@ -276,11 +282,7 @@ fn test_inverse_floats() {
         Ok([
             [3.240812809834622, -1.5373086942720335, -0.49858660478241557],
             [-0.9692430382347864, 1.8759663312198533, 0.04155504934405438],
-            [
-                0.05563834281000593,
-                -0.20400734898293651,
-                1.0571294977107015
-            ]
+            [0.05563834281000593, -0.20400734898293651, 1.0571294977107015]
         ]),
         inversed_copy(&[
             [0.4124108, 0.35758457, 0.18045382],
@@ -294,7 +296,8 @@ fn test_inverse_floats() {
 fn run_inverse_ratio_test<K>(f: &impl Fn((i64, i64)) -> K)
 where
     K: Scalar + core::fmt::Debug,
-    for<'x> &'x K: num_traits::RefNum<K>, {
+    for<'x> &'x K: num_traits::RefNum<K>,
+{
     assert_eq!(
         Ok([
             [

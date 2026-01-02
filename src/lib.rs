@@ -180,20 +180,23 @@ pub(crate) mod test {
         y: Ratio,
     ) -> super::Chromaticity<K>
     where
-        K: core::fmt::Debug + num_traits::Signed, {
+        K: core::fmt::Debug + num_traits::Signed,
+    {
         super::Chromaticity::new(f(x), f(y)).unwrap()
     }
 
 
     fn white<K>(f: &impl Fn((i64, i64)) -> K) -> super::Chromaticity<K>
     where
-        K: core::fmt::Debug + num_traits::Signed, {
+        K: core::fmt::Debug + num_traits::Signed,
+    {
         chromaticity(f, (312713, 1000000), (41127, 125000))
     }
 
     fn primaries<K>(f: &impl Fn((i64, i64)) -> K) -> [super::Chromaticity<K>; 3]
     where
-        K: core::fmt::Debug + num_traits::Signed, {
+        K: core::fmt::Debug + num_traits::Signed,
+    {
         [
             chromaticity(f, (64, 100), (33, 100)),
             chromaticity(f, (30, 100), (60, 100)),
@@ -235,7 +238,8 @@ pub(crate) mod test {
     fn run_ratio_test<K>(f: &impl Fn((i64, i64)) -> K)
     where
         K: super::matrix::Scalar + num_traits::Signed + core::fmt::Debug,
-        for<'x> &'x K: num_traits::RefNum<K>, {
+        for<'x> &'x K: num_traits::RefNum<K>,
+    {
         assert_eq!(
             Ok([
                 [
