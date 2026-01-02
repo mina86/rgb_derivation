@@ -118,11 +118,12 @@ where
     // M' = [[R_X/R_Y 1 R_Z/R_Y] [G_X/G_Y 1 G_Z/G_Y] [B_X/B_Y 1 B_Z/B_Y]]^T
     let mut mp = transposed(make_vector(|i| primaries[i].to_xyz()));
 
-    // Y = M′⁻¹ ✕ W
+    // Y = M'⁻¹ ✕ W
     let inverse_m_prime = inversed_copy(&mp)?;
-    let y_fn = |i| dot_product(&inverse_m_prime[i], &white);
+    let y_fn = |i| dot_product(&inverse_m_prime[i], white);
 
-    // M = M′ ✕ diag(Y)
+    // M = M' ✕ diag(Y)
+    #[allow(clippy::needless_range_loop)]
     for col in 0..3 {
         let y = y_fn(col);
         for row in 0..3 {
@@ -208,9 +209,9 @@ where
     // https://en.wikipedia.org/wiki/Minor_(linear_algebra)#Inverse_of_a_matrix
     // We’ve already transposed comatrix so now all we have to do is just divide
     // it by the Scalar.
-    for row in 0..3 {
-        for col in 0..3 {
-            comatrix_transposed[row][col] /= &det;
+    for row in comatrix_transposed.iter_mut() {
+        for cell in row.iter_mut() {
+            *cell /= &det;
         }
     }
     Ok(comatrix_transposed)
