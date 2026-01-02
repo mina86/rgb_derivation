@@ -35,7 +35,7 @@ pub trait Scalar:
 
 impl<T> Scalar for T where
     T: Clone
-        + std::ops::Neg<Output = Self>
+        + core::ops::Neg<Output = Self>
         + num_traits::NumRef
         + num_traits::NumAssignRef
         + num_traits::Signed
@@ -157,7 +157,7 @@ pub fn transposed<K>(mut matrix: Matrix<K>) -> Matrix<K> {
         // are different rows.
         let (a, b) =
             unsafe { (&mut *m.offset(i as isize), &mut *m.offset(j as isize)) };
-        std::mem::swap(&mut a[j], &mut b[i]);
+        core::mem::swap(&mut a[j], &mut b[i]);
     }
     matrix
 }
@@ -295,7 +295,7 @@ fn test_inverse_floats() {
 #[cfg(test)]
 fn run_inverse_ratio_test<K>(f: &impl Fn((i64, i64)) -> K)
 where
-    K: Scalar + std::fmt::Debug,
+    K: Scalar + core::fmt::Debug,
     for<'x> &'x K: num_traits::RefNum<K>, {
     assert_eq!(
         Ok([
