@@ -300,3 +300,41 @@ fn test_cofactor() {
     let got = make_matrix(|row, col| cofactor(&matrix, row, col));
     assert_eq!([[-45, -38, 27], [19, 18, -13], [20, 16, -12]], got);
 }
+
+
+#[cfg(test)]
+fn calc_diff(want: Matrix<crate::test::Rational>, got: Matrix<f32>) -> f64 {
+    let mut err = num::BigRational::default();
+    for (want, got) in want.into_iter().zip(got.into_iter()) {
+        for (want, got) in want.into_iter().zip(got.into_iter()) {
+            let want = want.into_raw();
+            let want = num::BigRational::new_raw(want.0.into(), want.1.into());
+            let got =  num::BigRational::from_float(got).unwrap();
+            let e = want - got;
+            err += &e * &e;
+        }
+    }
+    num_traits::ToPrimitive::to_f64(&err).unwrap()
+}
+
+#[test]
+#[ignore = "Expected to fail. The calculated error is the interesting part."]
+fn test_accuracy() {
+    let want = calculate(
+        &crate::test::white(&crate::test::ratio).to_xyz(),
+        &crate::test::primaries(&crate::test::ratio),
+    )
+    .unwrap();
+    let got = calculate(
+        &crate::test::white(&crate::test::float).to_xyz(),
+        &crate::test::primaries(&crate::test::float),
+    )
+    .unwrap();
+    let m_err = calc_diff(want, got);
+
+    let want = inversed_copy(&want).unwrap();
+    let got = inversed_copy(&got).unwrap();
+    let inv_err = calc_diff(want, got);
+
+    panic!("M   error: {:e}\nM⁻¹ error: {:e}", m_err, inv_err);
+}

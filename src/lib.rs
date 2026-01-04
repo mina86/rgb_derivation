@@ -123,7 +123,7 @@ impl<K: matrix::Scalar> Chromaticity<K> {
 #[cfg(test)]
 pub(crate) mod test {
     type Ratio = (i32, i32);
-    type Rational = num::rational::Ratio<i128>;
+    pub type Rational = num::rational::Ratio<i128>;
 
     pub fn float(num: Ratio) -> f32 { (num.0 as f64 / num.1 as f64) as f32 }
 
@@ -132,7 +132,7 @@ pub(crate) mod test {
         num::rational::Ratio::new_raw(num.0 as i128, num.1 as i128)
     }
 
-    fn chromaticity<K: core::fmt::Debug + num_traits::Signed>(
+    pub fn chromaticity<K: core::fmt::Debug + num_traits::Signed>(
         f: &impl Fn(Ratio) -> K,
         x: Ratio,
         y: Ratio,
@@ -141,13 +141,13 @@ pub(crate) mod test {
     }
 
 
-    fn white<K: core::fmt::Debug + num_traits::Signed>(
+    pub fn white<K: core::fmt::Debug + num_traits::Signed>(
         f: &impl Fn((i32, i32)) -> K,
     ) -> super::Chromaticity<K> {
         chromaticity(f, (312713, 1000000), (41127, 125000))
     }
 
-    fn primaries<K: core::fmt::Debug + num_traits::Signed>(
+    pub fn primaries<K: core::fmt::Debug + num_traits::Signed>(
         f: &impl Fn((i32, i32)) -> K,
     ) -> [super::Chromaticity<K>; 3] {
         [
