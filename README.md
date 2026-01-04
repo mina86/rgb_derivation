@@ -24,12 +24,11 @@ dependency:
 
 ```toml
 [dependencies]
-rgb_derivation = "0.2"
+rgb_derivation = "0.2.2"
 ```
 
 With that dependency in place, it’s now simple to write an application
 which converts an sRGB colour into other colour spaces:
-
 
 ```rust
 type Scalar = num::rational::Ratio<i128>;
@@ -89,10 +88,9 @@ fn main() {
         chromaticity((15, 100), (6, 100)),
     ];
 
-    let white_xyz = white_xy.to_xyz();
-    let matrix = rgb_derivation::matrix::calculate(
+    let white_xyz = white_xy.into_xyz();
+    let (matrix, inverse) = rgb_derivation::calculate_pair(
         &white_xyz, &primaries_xy).unwrap();
-    let inverse = rgb_derivation::matrix::inversed_copy(&matrix).unwrap();
     let primaries_xyz = rgb_derivation::matrix::transposed_copy(&matrix);
 
     print_vector("sRGB white point (D65)", &white_xyz);
