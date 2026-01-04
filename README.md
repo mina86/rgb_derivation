@@ -1,17 +1,20 @@
 # RGB colour system derivation routines
 
-Functions for deriving RGB→XYZ and XYZ→RGB conversion matrices for
-given RGB colour system (such as sRGB colour space).  The calculations
-are performed from the definition of such system provided in the form
-of chromacicities of the reference white point and the red, green and
-blue primaries.  Alternatively, constructions from XYZ coordinates of
-primaries is also available.
+Functions for deriving RGB→XYZ and XYZ→RGB conversion matrices for given RGB
+colour system (such as sRGB colour space).  The calculations are performed from
+the definition of such system provided in the form of chromacicities of the
+reference white point and the red, green and blue primaries.  Alternatively,
+constructions from XYZ coordinates of primaries is also available.
 
-The crate supports arithmetic with rational and big integer types such
-that the calculations can be performed without any loss of precision
-if desired.  So long as a type implements the four basic arithmetic
-operations, it can be used with this library.  For example, `f32`,
-`num::Rational64` and `num::BigRational` can all be used.
+The crate supports calculations using any numeric type which handles the four
+basic arithmetic operations.  In particular, rational types such as
+`num::rational::Ratio<i128>` or `num::BigRational` can be used to avoid any loss
+of precision while performing the calculations.  (Note that `num::Rational64`
+and especially `num::Rational32` may lead to overflows thus those types are not
+recommended unless overflow checking is enabled).
+
+Of course the calculations can also be performed with `f32` or `f64` primitive
+types.
 
 
 ## Usage
@@ -98,3 +101,7 @@ fn main() {
     print_matrix("XYZ→sRGB", &inverse);
 }
 ```
+
+Note: if you need matrices for the sRGB colour space, the [`srgb`
+crate](https://crates.io/crates/srgb) provides them along with gamma functions
+needed to properly handle sRGB.
