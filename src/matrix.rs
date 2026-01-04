@@ -108,7 +108,7 @@ pub fn calculate<K: Scalar>(
     primaries: &[crate::Chromaticity<K>; 3],
 ) -> Result<Matrix<K>, crate::Error<K>>
 where
-    for<'x> &'x K: num_traits::RefNum<K>,
+    for<'x> &'x K: num_traits::NumOps<&'x K, K>,
 {
     if !white[1].is_positive() {
         return Err(crate::Error::InvalidWhitePoint(white.clone()));
@@ -190,12 +190,11 @@ pub fn transposed_copy<K: Clone>(matrix: &Matrix<K>) -> Matrix<K> {
 ///     [ 0.0052033975, -0.014427602, 1.010216],
 /// ], rgb_derivation::matrix::inversed_copy(&matrix).unwrap());
 /// ```
-pub fn inversed_copy<K>(
+pub fn inversed_copy<K: Scalar>(
     matrix: &Matrix<K>,
 ) -> Result<Matrix<K>, crate::Error<K>>
 where
-    K: Scalar,
-    for<'x> &'x K: num_traits::RefNum<K>,
+    for<'x> &'x K: num_traits::NumOps<&'x K, K>,
 {
     let mut comatrix_transposed =
         make_matrix(|row, col| cofactor(matrix, col, row));
@@ -234,7 +233,7 @@ fn make_matrix<T>(f: impl Fn(usize, usize) -> T) -> [[T; 3]; 3] {
 /// Calculates a dot product of two 3-element vectors.
 fn dot_product<K: Scalar>(a: &[K; 3], b: &[K; 3]) -> K
 where
-    for<'x> &'x K: num_traits::RefNum<K>,
+    for<'x> &'x K: num_traits::NumOps<&'x K, K>,
 {
     &a[0] * &b[0] + &a[1] * &b[1] + &a[2] * &b[2]
 }
@@ -243,7 +242,7 @@ where
 fn dot_product_with_column<K>(a: &[K; 3], b: &Matrix<K>, col: usize) -> K
 where
     K: Scalar,
-    for<'x> &'x K: num_traits::RefNum<K>,
+    for<'x> &'x K: num_traits::NumOps<&'x K, K>,
 {
     &a[0] * &b[0][col] + &a[1] * &b[1][col] + &a[2] * &b[2][col]
 }
@@ -252,17 +251,16 @@ where
 /// Returns a cofactor of a 3✕3 matrix M, i.e. C_{row,col}.
 fn cofactor<K: Scalar>(matrix: &Matrix<K>, row: usize, col: usize) -> K
 where
-    for<'x> &'x K: num_traits::RefNum<K>,
+    for<'x> &'x K: num_traits::NumOps<&'x K, K>,
 {
     let rr = ((row == 0) as usize, 2 - (row == 2) as usize);
     let cc = ((col == 0) as usize, 2 - (col == 2) as usize);
     let ad = &matrix[rr.0][cc.0] * &matrix[rr.1][cc.1];
     let bc = &matrix[rr.1][cc.0] * &matrix[rr.0][cc.1];
-    let minor = ad - bc;
     if (row ^ col) & 1 == 0 {
-        minor
+        ad - bc
     } else {
-        -minor
+        bc - ad
     }
 }
 
@@ -296,7 +294,7 @@ fn test_inverse_floats() {
 fn run_inverse_ratio_test<K>(f: &impl Fn((i64, i64)) -> K)
 where
     K: Scalar + core::fmt::Debug,
-    for<'x> &'x K: num_traits::RefNum<K>,
+    for<'x> &'x K: num_traits::NumOps<&'x K, K>,
 {
     assert_eq!(
         Ok([

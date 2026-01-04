@@ -137,7 +137,7 @@ impl<K: num_traits::Signed> Chromaticity<K> {
 
 impl<K: matrix::Scalar> Chromaticity<K>
 where
-    for<'x> &'x K: num_traits::RefNum<K>,
+    for<'x> &'x K: num_traits::NumOps<&'x K, K>,
 {
     /// Returns XYZ coordinates of a colour with given chromaticity.  Assumes
     /// luminosity (the Y coordinate) equal one.
