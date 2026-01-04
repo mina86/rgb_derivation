@@ -52,7 +52,7 @@
 //!     chromaticity((15, 100), (6, 100)),
 //! ];
 //!
-//! let white_xyz = white_xy.to_xyz();
+//! let white_xyz = white_xy.into_xyz();
 //! let matrix =
 //!     rgb_derivation::matrix::calculate(&white_xyz, &primaries_xy).unwrap();
 //! let inverse = rgb_derivation::matrix::inversed_copy(&matrix).unwrap();
@@ -108,6 +108,9 @@ pub struct Chromaticity<K>(K, K);
 impl<K> Chromaticity<K> {
     pub fn x(&self) -> &K { &self.0 }
     pub fn y(&self) -> &K { &self.1 }
+
+    /// Deconstructs the object into `(x, y)` pair.
+    pub fn into_xy(self) -> (K, K) { (self.0, self.1) }
 }
 
 impl<K: num_traits::Signed> Chromaticity<K> {
@@ -127,7 +130,7 @@ impl<K: num_traits::Signed> Chromaticity<K> {
     /// # Safety
     ///
     /// Does not check whether the coordinates are positive.  If they aren’t,
-    /// other methods (e.g. [`Chromaticity::to_xyz`] may result in undefined
+    /// other methods (e.g. [`Chromaticity::into_xyz`] may result in undefined
     /// behaviour.
     pub unsafe fn new_unchecked(x: K, y: K) -> Self { Self(x, y) }
 }
@@ -146,13 +149,35 @@ where
     ///
     /// let one = num::rational::Ratio::new(1i64, 1i64);
     /// let one_third = num::rational::Ratio::new(1i64, 3i64);
-    /// let e = Chromaticity::new(one_third, one_third).unwrap().to_xyz();
+    /// let e = Chromaticity::new(one_third, one_third).unwrap().into_xyz();
     /// assert_eq!([one, one, one], e);
     /// ```
     pub fn to_xyz(&self) -> [K; 3] {
         let (x, y) = (self.x(), self.y());
         let uc_x = x / y;
         let uc_z = (K::one() - x - y) / y;
+        [uc_x, K::one(), uc_z]
+    }
+}
+
+impl<K: matrix::Scalar> Chromaticity<K> {
+    /// Returns XYZ coordinates of a colour with given chromaticity.  Assumes
+    /// luminosity (the Y coordinate) equal one.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rgb_derivation::Chromaticity;
+    ///
+    /// let one = num::rational::Ratio::new(1i64, 1i64);
+    /// let one_third = num::rational::Ratio::new(1i64, 3i64);
+    /// let e = Chromaticity::new(one_third, one_third).unwrap().into_xyz();
+    /// assert_eq!([one, one, one], e);
+    /// ```
+    pub fn into_xyz(self) -> [K; 3] {
+        let (x, y) = self.into_xy();
+        let uc_z = (K::one() - &x - &y) / &y;
+        let uc_x = x / y;
         [uc_x, K::one(), uc_z]
     }
 }
@@ -207,19 +232,21 @@ pub(crate) mod test {
     #[test]
     fn test_xyz() {
         let f = &new_float;
-        assert_eq!([0.9504492, 1.0, 1.0889165], white(f).to_xyz());
+        let w = white(f);
+        assert_eq!([0.9504492, 1.0, 1.0889165], w.to_xyz());
+        assert_eq!([0.9504492, 1.0, 1.0889165], w.into_xyz());
 
         let f = &new_ratio;
-        assert_eq!(
-            [f((312713, 329016)), f((1, 1)), f((358271, 329016))],
-            white(f).to_xyz()
-        );
+        let w = white(f);
+        let want = [f((312713, 329016)), f((1, 1)), f((358271, 329016))];
+        assert_eq!(want, w.to_xyz());
+        assert_eq!(want, w.into_xyz());
 
         let f = &new_big_ratio;
-        assert_eq!(
-            [f((312713, 329016)), f((1, 1)), f((358271, 329016))],
-            white(f).to_xyz()
-        );
+        let w = white(f);
+        let want = [f((312713, 329016)), f((1, 1)), f((358271, 329016))];
+        assert_eq!(want, w.to_xyz());
+        assert_eq!(want, w.into_xyz());
     }
 
     #[test]
@@ -231,7 +258,7 @@ pub(crate) mod test {
                 [0.21264932, 0.71516913, 0.07218152],
                 [0.019331757, 0.119194806, 0.9503901]
             ]),
-            super::matrix::calculate(&white(f).to_xyz(), &primaries(f))
+            super::matrix::calculate(&white(f).into_xyz(), &primaries(f))
         );
     }
 
@@ -258,7 +285,7 @@ pub(crate) mod test {
                     f((233582065, 245774952))
                 ],
             ]),
-            super::matrix::calculate(&white(f).to_xyz(), &primaries(f))
+            super::matrix::calculate(&white(f).into_xyz(), &primaries(f))
         );
     }
 

@@ -55,10 +55,10 @@ pub type Matrix<K> = [[K; 3]; 3];
 /// spaces.
 ///
 /// The matrix is calculated from XYZ coordinates of a reference white point and
-/// chromacicities of the three primary colours (red, green and blue).  (Note that
-/// [`crate::Chromaticity::to_xyz`] function allows conversion from
-/// chromaticity to XYZ coordinates thus the function may be used when only x and
-/// y coordinates of the white point are known).
+/// chromacicities of the three primary colours (red, green and blue).  (Note
+/// that [`crate::Chromaticity::into_xyz`] function allows conversion from
+/// chromaticity to XYZ coordinates thus the function may be used when only
+/// x and y coordinates of the white point are known).
 ///
 /// The result is a three-by-three matrix M such that multiplying it by
 /// a column-vector representing a colour in linear RGB space results in
@@ -83,7 +83,7 @@ pub type Matrix<K> = [[K; 3]; 3];
 ///     Chromaticity::new(0.167_f32, 0.009_f32).unwrap(),
 /// ];
 ///
-/// let matrix    = matrix::calculate(&white.to_xyz(), &primaries).unwrap();
+/// let matrix    = matrix::calculate(&white.into_xyz(), &primaries).unwrap();
 /// let inverse   = matrix::inversed_copy(&matrix).unwrap();
 /// let primaries = matrix::transposed_copy(&matrix);
 ///
