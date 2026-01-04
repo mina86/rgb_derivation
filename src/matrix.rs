@@ -76,32 +76,27 @@ pub type Matrix<K> = [[K; 3]; 3];
 /// ```
 /// use rgb_derivation::{Chromaticity, matrix};
 ///
+/// // CIE RGB
 /// let white = Chromaticity::new(1.0_f32 / 3.0, 1.0 / 3.0).unwrap();
 /// let primaries = [
-///     Chromaticity::new(0.735_f32, 0.265_f32).unwrap(),
-///     Chromaticity::new(0.274_f32, 0.717_f32).unwrap(),
-///     Chromaticity::new(0.167_f32, 0.009_f32).unwrap(),
+///     Chromaticity::new(0.73474284_f32, 0.26525716_f32).unwrap(),
+///     Chromaticity::new(0.27377903_f32, 0.7174777_f32).unwrap(),
+///     Chromaticity::new(0.16655563_f32, 0.00891073_f32).unwrap(),
 /// ];
 ///
-/// let matrix    = matrix::calculate(&white.into_xyz(), &primaries).unwrap();
-/// let inverse   = matrix::inversed_copy(&matrix).unwrap();
-/// let primaries = matrix::transposed_copy(&matrix);
+/// let matrix  = matrix::calculate(&white.into_xyz(), &primaries).unwrap();
+/// let inverse = matrix::inversed_copy(&matrix).unwrap();
 ///
 /// assert_eq!([
-///     [0.4887181,  0.31068033,  0.20060167],
-///     [0.17620447, 0.8129847,   0.010810869],
-///     [0.0,        0.010204833, 0.98979515],
+///     [0.4900001,    0.31,        0.19999997],
+///     [0.17690003,   0.8123999,   0.010700002],
+///     [1.9875172e-8, 0.009900022, 0.99009985],
 /// ], matrix);
 /// assert_eq!([
-///     [ 2.3706737,   -0.9000402,  -0.47063363],
-///     [-0.5138849,    1.4253035,   0.08858136],
-///     [ 0.005298177, -0.014694944, 1.0093968],
+///     [2.3644896,    -0.8965525,  -0.4679374],
+///     [-0.51493526,   1.426333,    0.08860245],
+///     [0.0051487973, -0.014261905, 1.0091132],
 /// ], inverse);
-/// assert_eq!([
-///     [0.4887181,  0.17620447,  0.0],
-///     [0.31068033, 0.8129847,   0.010204833],
-///     [0.20060167, 0.010810869, 0.98979515],
-/// ], primaries);
 /// ```
 pub fn calculate<K: Scalar>(
     white: &[K; 3],
@@ -118,22 +113,25 @@ where
     // https://mina86.com/2019/srgb-xyz-matrix/
 
     // M' = [[R_X/R_Y 1 R_Z/R_Y] [G_X/G_Y 1 G_Z/G_Y] [B_X/B_Y 1 B_Z/B_Y]]^T
-    let mut mp = transposed(make_vector(|i| primaries[i].to_xyz()));
+    let m_prime = transposed(make_vector(|i| primaries[i].to_xyz()));
 
-    // Y = M'⁻¹ ✕ W
-    let inverse_m_prime = inversed_copy(&mp)?;
-    let y_fn = |i| dot_product(&inverse_m_prime[i], white);
+    // Y = M'⁻¹ ✕ W = C'^T ✕ W / det(M').  By pulling det(M') out, we do 3
+    // divisions rather than 9.  It also improves stability of the calculation
+    // (as tested by calculating square error between M×M⁻¹ and identity
+    // matrix).
+    let (c_prime_transp, det) = inversed_internal(&m_prime)?;
+    let y_fn = |i| dot_product(&c_prime_transp[i], white) / &det;
 
     // M = M' ✕ diag(Y)
-    #[allow(clippy::needless_range_loop)]
+    let mut m = m_prime;
     for col in 0..3 {
         let y = y_fn(col);
-        for row in 0..3 {
-            mp[row][col] *= &y;
+        for row in m.iter_mut() {
+            row[col] *= &y;
         }
     }
 
-    Ok(mp)
+    Ok(m)
 }
 
 
@@ -203,36 +201,50 @@ pub fn inversed_copy<K: Scalar>(
 where
     for<'x> &'x K: num_traits::NumOps<&'x K, K>,
 {
-    let mut comatrix_transposed =
+    inversed_internal(matrix).map(|(mut m, det)| {
+        // https://en.wikipedia.org/wiki/Minor_(linear_algebra)#Inverse_of_a_matrix
+        // We’ve already transposed comatrix so now all we have to do is divide
+        // it by the determinant.
+        for row in m.iter_mut() {
+            for cell in row.iter_mut() {
+                *cell /= &det;
+            }
+        }
+        m
+    })
+}
+
+/// For a given 3×3 matrix, returns `(com^T, 1/det)` pair where `com` is
+/// comatrix of the matrix and `det` is its determinant.  To get inverse of the
+/// matrix, multiply each element of `com^T` by `1/det`.
+fn inversed_internal<K: Scalar>(
+    matrix: &Matrix<K>,
+) -> Result<(Matrix<K>, K), crate::Error<K>>
+where
+    for<'x> &'x K: num_traits::NumOps<&'x K, K>,
+{
+    let comatrix_transposed =
         make_matrix(|row, col| cofactor(matrix, col, row));
 
     // https://en.wikipedia.org/wiki/Minor_(linear_algebra)#Cofactor_expansion_of_the_determinant
     // Because we transposed the comatrix when we created it, we need to
     // calculate dot product of the first row of the matrix and first *column*
     // of the comatrix.
-    let det: K = dot_product_with_column(&matrix[0], &comatrix_transposed, 0);
+    let det = dot_product_with_column(&matrix[0], &comatrix_transposed, 0);
     if det.is_zero() {
-        return Err(crate::Error::DegenerateMatrix);
+        Err(crate::Error::DegenerateMatrix)
+    } else {
+        Ok((comatrix_transposed, det))
     }
-
-    // https://en.wikipedia.org/wiki/Minor_(linear_algebra)#Inverse_of_a_matrix
-    // We’ve already transposed comatrix so now all we have to do is just divide
-    // it by the Scalar.
-    for row in comatrix_transposed.iter_mut() {
-        for cell in row.iter_mut() {
-            *cell /= &det;
-        }
-    }
-    Ok(comatrix_transposed)
 }
 
 #[test]
 fn test_inverse_floats() {
     assert_eq!(
         Ok([
-            [3.2408128, -1.5373087, -0.49858665],
-            [-0.9692431, 1.8759665, 0.041555043],
-            [0.055638347, -0.20400736, 1.0571296]
+            [3.240813, -1.5373088, -0.49858665],
+            [-0.96924317, 1.8759665, 0.041555062],
+            [0.05563835, -0.20400737, 1.0571296]
         ]),
         inversed_copy(&crate::test::M_F32)
     );
