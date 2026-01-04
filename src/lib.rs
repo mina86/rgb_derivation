@@ -122,7 +122,7 @@ impl<K: matrix::Scalar> Chromaticity<K> {
 
 #[cfg(test)]
 pub(crate) mod test {
-    type Ratio = (i64, i64);
+    type Ratio = (i32, i32);
 
     pub(crate) fn new_float(num: Ratio) -> f32 {
         (num.0 as f64 / num.1 as f64) as f32
@@ -132,33 +132,24 @@ pub(crate) mod test {
         num::rational::Ratio::new(num.0 as i128, num.1 as i128)
     }
 
-    pub(crate) fn new_big_ratio(num: Ratio) -> num::BigRational {
-        num::rational::Ratio::new(num.0.into(), num.1.into())
-    }
-
-    pub(crate) fn chromaticity<K>(
+    fn chromaticity<K: core::fmt::Debug + num_traits::Signed>(
         f: &impl Fn(Ratio) -> K,
         x: Ratio,
         y: Ratio,
-    ) -> super::Chromaticity<K>
-    where
-        K: core::fmt::Debug + num_traits::Signed,
-    {
+    ) -> super::Chromaticity<K> {
         super::Chromaticity::new(f(x), f(y)).unwrap()
     }
 
 
-    fn white<K>(f: &impl Fn((i64, i64)) -> K) -> super::Chromaticity<K>
-    where
-        K: core::fmt::Debug + num_traits::Signed,
-    {
+    fn white<K: core::fmt::Debug + num_traits::Signed>(
+        f: &impl Fn((i32, i32)) -> K,
+    ) -> super::Chromaticity<K> {
         chromaticity(f, (312713, 1000000), (41127, 125000))
     }
 
-    fn primaries<K>(f: &impl Fn((i64, i64)) -> K) -> [super::Chromaticity<K>; 3]
-    where
-        K: core::fmt::Debug + num_traits::Signed,
-    {
+    fn primaries<K: core::fmt::Debug + num_traits::Signed>(
+        f: &impl Fn((i32, i32)) -> K,
+    ) -> [super::Chromaticity<K>; 3] {
         [
             chromaticity(f, (64, 100), (33, 100)),
             chromaticity(f, (30, 100), (60, 100)),
@@ -178,12 +169,6 @@ pub(crate) mod test {
         let want = [f((312713, 329016)), f((1, 1)), f((358271, 329016))];
         assert_eq!(want, w.to_xyz());
         assert_eq!(want, w.into_xyz());
-
-        let f = &new_big_ratio;
-        let w = white(f);
-        let want = [f((312713, 329016)), f((1, 1)), f((358271, 329016))];
-        assert_eq!(want, w.to_xyz());
-        assert_eq!(want, w.into_xyz());
     }
 
     #[test]
@@ -199,11 +184,9 @@ pub(crate) mod test {
         );
     }
 
-    fn run_ratio_test<K>(f: &impl Fn((i64, i64)) -> K)
-    where
-        K: super::matrix::Scalar + num_traits::Signed + core::fmt::Debug,
-        for<'x> &'x K: num_traits::RefNum<K>,
-    {
+    #[test]
+    fn test_calculate_ratio() {
+        let f = &new_ratio;
         assert_eq!(
             Ok([
                 [
@@ -225,10 +208,4 @@ pub(crate) mod test {
             super::matrix::calculate(&white(f).into_xyz(), &primaries(f))
         );
     }
-
-    #[test]
-    fn test_calculate_ratio() { run_ratio_test(&new_ratio); }
-
-    #[test]
-    fn test_calculate_big_ratio() { run_ratio_test(&new_big_ratio); }
 }

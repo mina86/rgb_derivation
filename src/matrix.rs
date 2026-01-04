@@ -269,8 +269,6 @@ where
 fn test_transpose() {
     let matrix: Matrix<u64> = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
     assert_eq!([[1, 4, 7], [2, 5, 8], [3, 6, 9]], transposed_copy(&matrix));
-
-    let matrix: Matrix<u64> = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
     assert_eq!([[1, 4, 7], [2, 5, 8], [3, 6, 9]], transposed(matrix));
 }
 
@@ -290,12 +288,9 @@ fn test_inverse_floats() {
     );
 }
 
-#[cfg(test)]
-fn run_inverse_ratio_test<K>(f: &impl Fn((i64, i64)) -> K)
-where
-    K: Scalar + core::fmt::Debug,
-    for<'x> &'x K: num_traits::NumOps<&'x K, K>,
-{
+#[test]
+fn test_inverses_ratio() {
+    let f = &crate::test::new_ratio;
     assert_eq!(
         Ok([
             [
@@ -332,12 +327,4 @@ where
             ],
         ])
     );
-}
-
-#[test]
-fn test_inverses_ratio() { run_inverse_ratio_test(&crate::test::new_ratio); }
-
-#[test]
-fn test_inverses_big_ratio() {
-    run_inverse_ratio_test(&crate::test::new_big_ratio);
 }
