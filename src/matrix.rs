@@ -170,6 +170,13 @@ pub fn transposed_copy<K: Clone>(matrix: &Matrix<K>) -> Matrix<K> {
     make_matrix(|i, j| matrix[j][i].clone())
 }
 
+#[test]
+fn test_transpose() {
+    let matrix: Matrix<u64> = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+    assert_eq!([[1, 4, 7], [2, 5, 8], [3, 6, 9]], transposed_copy(&matrix));
+    assert_eq!([[1, 4, 7], [2, 5, 8], [3, 6, 9]], transposed(matrix));
+}
+
 
 /// Returns inversion of a 3✕3 matrix M, i.e. M⁻¹.
 ///
@@ -219,6 +226,22 @@ where
     Ok(comatrix_transposed)
 }
 
+#[test]
+fn test_inverse_floats() {
+    assert_eq!(
+        Ok([
+            [3.2408128, -1.5373087, -0.49858665],
+            [-0.9692431, 1.8759665, 0.041555043],
+            [0.055638347, -0.20400736, 1.0571296]
+        ]),
+        inversed_copy(&crate::test::M_F32)
+    );
+}
+
+#[test]
+fn test_inverses_ratio() {
+    assert_eq!(Ok(crate::test::M_INV_Q), inversed_copy(&crate::test::M_Q),);
+}
 
 
 /// Constructs a new 3-element array by applying a function to its indices.
@@ -229,6 +252,7 @@ fn make_vector<T>(f: impl Fn(usize) -> T) -> [T; 3] { [f(0), f(1), f(2)] }
 fn make_matrix<T>(f: impl Fn(usize, usize) -> T) -> [[T; 3]; 3] {
     make_vector(|r| make_vector(|c| f(r, c)))
 }
+
 
 /// Calculates a dot product of two 3-element vectors.
 fn dot_product<K: Scalar>(a: &[K; 3], b: &[K; 3]) -> K
@@ -247,6 +271,12 @@ where
     &a[0] * &b[0][col] + &a[1] * &b[1][col] + &a[2] * &b[2][col]
 }
 
+#[test]
+fn test_dot_product() {
+    assert_eq!(4 + 10 + 18, dot_product(&[1i32, 2, 3], &[4i32, 5, 6]));
+    let m = [[0, 4, 0], [0, 5, 0], [0, 6, 0]];
+    assert_eq!(4 + 10 + 18, dot_product_with_column(&[1i32, 2, 3], &m, 1));
+}
 
 /// Returns a cofactor of a 3✕3 matrix M, i.e. C_{row,col}.
 fn cofactor<K: Scalar>(matrix: &Matrix<K>, row: usize, col: usize) -> K
@@ -264,67 +294,9 @@ where
     }
 }
 
-
 #[test]
-fn test_transpose() {
-    let matrix: Matrix<u64> = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
-    assert_eq!([[1, 4, 7], [2, 5, 8], [3, 6, 9]], transposed_copy(&matrix));
-    assert_eq!([[1, 4, 7], [2, 5, 8], [3, 6, 9]], transposed(matrix));
-}
-
-#[test]
-fn test_inverse_floats() {
-    assert_eq!(
-        Ok([
-            [3.240812809834622, -1.5373086942720335, -0.49858660478241557],
-            [-0.9692430382347864, 1.8759663312198533, 0.04155504934405438],
-            [0.05563834281000593, -0.20400734898293651, 1.0571294977107015]
-        ]),
-        inversed_copy(&[
-            [0.4124108, 0.35758457, 0.18045382],
-            [0.21264932, 0.71516913, 0.07218152],
-            [0.019331757, 0.119194806, 0.9503901],
-        ])
-    );
-}
-
-#[test]
-fn test_inverses_ratio() {
-    let f = &crate::test::new_ratio;
-    assert_eq!(
-        Ok([
-            [
-                f((4277208, 1319795)),
-                f((-2028932, 1319795)),
-                f((-658032, 1319795))
-            ],
-            [
-                f((-70985202, 73237775)),
-                f((137391598, 73237775)),
-                f((3043398, 73237775))
-            ],
-            [
-                f((164508, 2956735)),
-                f((-603196, 2956735)),
-                f((3125652, 2956735))
-            ]
-        ]),
-        inversed_copy(&[
-            [
-                f((4223344, 10240623)),
-                f((14647555, 40962492)),
-                f((14783675, 81924984))
-            ],
-            [
-                f((2903549, 13654164)),
-                f((14647555, 20481246)),
-                f((2956735, 40962492))
-            ],
-            [
-                f((263959, 13654164)),
-                f((14647555, 122887476)),
-                f((233582065, 245774952))
-            ],
-        ])
-    );
+fn test_cofactor() {
+    let matrix = [[1, 4, 7], [3, 0, 5], [-1, 9, 11]];
+    let got = make_matrix(|row, col| cofactor(&matrix, row, col));
+    assert_eq!([[-45, -38, 27], [19, 18, -13], [20, 16, -12]], got);
 }

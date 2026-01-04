@@ -123,13 +123,13 @@ impl<K: matrix::Scalar> Chromaticity<K> {
 #[cfg(test)]
 pub(crate) mod test {
     type Ratio = (i32, i32);
+    type Rational = num::rational::Ratio<i128>;
 
-    pub(crate) fn new_float(num: Ratio) -> f32 {
-        (num.0 as f64 / num.1 as f64) as f32
-    }
+    pub fn float(num: Ratio) -> f32 { (num.0 as f64 / num.1 as f64) as f32 }
 
-    pub(crate) fn new_ratio(num: Ratio) -> num::rational::Ratio<i128> {
-        num::rational::Ratio::new(num.0 as i128, num.1 as i128)
+    pub const fn ratio(num: Ratio) -> Rational {
+        assert!(num.1 != 0);
+        num::rational::Ratio::new_raw(num.0 as i128, num.1 as i128)
     }
 
     fn chromaticity<K: core::fmt::Debug + num_traits::Signed>(
@@ -157,14 +157,56 @@ pub(crate) mod test {
         ]
     }
 
+    pub const M_F32: [[f32; 3]; 3] = [
+        [0.4124108, 0.35758457, 0.18045382],
+        [0.21264932, 0.71516913, 0.07218152],
+        [0.019331757, 0.119194806, 0.9503901],
+    ];
+
+    pub const M_Q: [[Rational; 3]; 3] = [
+        [
+            ratio((4223344, 10240623)),
+            ratio((14647555, 40962492)),
+            ratio((14783675, 81924984)),
+        ],
+        [
+            ratio((2903549, 13654164)),
+            ratio((14647555, 20481246)),
+            ratio((2956735, 40962492)),
+        ],
+        [
+            ratio((263959, 13654164)),
+            ratio((14647555, 122887476)),
+            ratio((233582065, 245774952)),
+        ],
+    ];
+    pub const M_INV_Q: [[Rational; 3]; 3] = [
+        [
+            ratio((4277208, 1319795)),
+            ratio((-2028932, 1319795)),
+            ratio((-658032, 1319795)),
+        ],
+        [
+            ratio((-70985202, 73237775)),
+            ratio((137391598, 73237775)),
+            ratio((3043398, 73237775)),
+        ],
+        [
+            ratio((164508, 2956735)),
+            ratio((-603196, 2956735)),
+            ratio((3125652, 2956735)),
+        ],
+    ];
+
+
     #[test]
     fn test_xyz() {
-        let f = &new_float;
+        let f = &float;
         let w = white(f);
         assert_eq!([0.9504492, 1.0, 1.0889165], w.to_xyz());
         assert_eq!([0.9504492, 1.0, 1.0889165], w.into_xyz());
 
-        let f = &new_ratio;
+        let f = &ratio;
         let w = white(f);
         let want = [f((312713, 329016)), f((1, 1)), f((358271, 329016))];
         assert_eq!(want, w.to_xyz());
@@ -173,38 +215,18 @@ pub(crate) mod test {
 
     #[test]
     fn test_calculate_matrix_floats() {
-        let f = &new_float;
+        let f = &float;
         assert_eq!(
-            Ok([
-                [0.4124108, 0.35758457, 0.18045382],
-                [0.21264932, 0.71516913, 0.07218152],
-                [0.019331757, 0.119194806, 0.9503901]
-            ]),
+            Ok(M_F32),
             super::matrix::calculate(&white(f).into_xyz(), &primaries(f))
         );
     }
 
     #[test]
     fn test_calculate_ratio() {
-        let f = &new_ratio;
+        let f = &ratio;
         assert_eq!(
-            Ok([
-                [
-                    f((4223344, 10240623)),
-                    f((14647555, 40962492)),
-                    f((14783675, 81924984))
-                ],
-                [
-                    f((2903549, 13654164)),
-                    f((14647555, 20481246)),
-                    f((2956735, 40962492))
-                ],
-                [
-                    f((263959, 13654164)),
-                    f((14647555, 122887476)),
-                    f((233582065, 245774952))
-                ],
-            ]),
+            Ok(M_Q),
             super::matrix::calculate(&white(f).into_xyz(), &primaries(f))
         );
     }
