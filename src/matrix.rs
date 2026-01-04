@@ -71,6 +71,9 @@ pub type Matrix<K> = [[K; 3]; 3];
 /// Finally, the columns of the result are XYZ coordinates of the primaries.  To
 /// get the primaries oriented in rows [`transposed_copy`] function can be used.
 ///
+/// See also [`calculate_pair`] which calculates the matrix and its inverse in
+/// a single call.
+///
 /// # Example
 ///
 /// ```
@@ -132,6 +135,86 @@ where
     }
 
     Ok(m)
+}
+
+
+/// Calculates change of basis matrices for moving between linear RGB to XYZ
+/// colour spaces.
+///
+/// This is logically the same as [`calculate`] paired with [`inversed_copy`]
+/// but slightly more efficient (as it only calculates a single matrix inverse).
+/// However, when doing calculations on floating point numbers, the inverse
+/// matrix may yield different result.
+///
+/// If accuracy is a concern it’s always best to perform calculation using
+/// a rational type (such as `rational::Ratio<i128>` from `num` crate) and
+/// convert result to floating point at the end.
+///
+/// # Example
+///
+/// ```
+/// use rgb_derivation::{Chromaticity, matrix};
+///
+/// let white = Chromaticity::new(1.0_f32 / 3.0, 1.0 / 3.0).unwrap().into_xyz();
+/// let primaries = [
+///     Chromaticity::new(0.735_f32, 0.265_f32).unwrap(),
+///     Chromaticity::new(0.274_f32, 0.717_f32).unwrap(),
+///     Chromaticity::new(0.167_f32, 0.009_f32).unwrap(),
+/// ];
+///
+/// let m_1     = matrix::calculate(&white, &primaries).unwrap();
+/// let m_1_inv = matrix::inversed_copy(&m_1).unwrap();
+/// let (m_2, m_2_inv) = matrix::calculate_pair(&white, &primaries).unwrap();
+///
+/// assert_eq!(m_1, m_2);
+/// // Mathematically m_1_inv == m_2_inv but due to approximate nature of
+/// // floating point numbers in practice the two matrices are different:
+/// assert_ne!(m_1_inv, m_2_inv);
+/// ```
+pub fn calculate_pair<K: Scalar>(
+    white: &[K; 3],
+    primaries: &[super::Chromaticity<K>; 3],
+) -> Result<(Matrix<K>, Matrix<K>), super::Error<K>>
+where
+    for<'x> &'x K: num_traits::NumOps<&'x K, K>,
+{
+    if !white[1].is_positive() {
+        return Err(crate::Error::InvalidWhitePoint(white.clone()));
+    }
+
+    // Calculate the transformation matrix as per
+    // https://mina86.com/2019/srgb-xyz-matrix/
+
+    // M' = [[R_X/R_Y 1 R_Z/R_Y] [G_X/G_Y 1 G_Z/G_Y] [B_X/B_Y 1 B_Z/B_Y]]^T
+    let m_prime = transposed(make_vector(|i| primaries[i].to_xyz()));
+
+    // Y = M'⁻¹ ✕ W = C'^T / det(M') ✕ W
+    // Y * det(M') = C'^T ✕ W
+    let (c_prime_transp, det) = inversed_internal(&m_prime)?;
+    let y_times_det = make_vector(|i| dot_product(&c_prime_transp[i], white));
+
+    // M = M' ✕ diag(Y) = M' ✕ diag(Y * det(M') / det(M')
+    let mut m = m_prime.clone();
+    for (col, y_times_det) in y_times_det.iter().enumerate() {
+        let y = y_times_det / &det;
+        for row in m.iter_mut() {
+            row[col] *= &y;
+        }
+    }
+
+    // M⁻¹ = (M' × diag(Y))⁻¹
+    //    = (M' ✕ diag(Y * det(M')) / det(M'))⁻¹
+    //    = diag(Y * det(M'))⁻¹   ✕ M'⁻¹ * det(M')
+    //    = diag(1/(Y * det(M'))) ✕ C'^T / det(M') * det(M')
+    //    = diag(1/(Y * det(M'))) ✕ C'^T
+    let mut m_inv = c_prime_transp;
+    for col in 0..3 {
+        for (row, y_times_det) in m_inv.iter_mut().zip(y_times_det.iter()) {
+            row[col] /= y_times_det;
+        }
+    }
+
+    Ok((m, m_inv))
 }
 
 
@@ -240,14 +323,12 @@ where
 
 #[test]
 fn test_inverse_floats() {
-    assert_eq!(
-        Ok([
-            [3.240813, -1.5373088, -0.49858665],
-            [-0.96924317, 1.8759665, 0.041555062],
-            [0.05563835, -0.20400737, 1.0571296]
-        ]),
-        inversed_copy(&crate::test::M_F32)
-    );
+    let want = [
+        [3.240813, -1.5373088, -0.49858665],
+        [-0.96924317, 1.8759665, 0.041555062],
+        [0.05563835, -0.20400737, 1.0571296],
+    ];
+    assert_eq!(Ok(want), inversed_copy(&crate::test::M_F32));
 }
 
 #[test]
@@ -333,12 +414,12 @@ fn calc_diff(want: Matrix<crate::test::Rational>, got: Matrix<f32>) -> f64 {
 #[ignore = "Expected to fail. The calculated error is the interesting part."]
 fn test_accuracy() {
     let want = calculate(
-        &crate::test::white(&crate::test::ratio).to_xyz(),
+        &crate::test::white_xyz(&crate::test::ratio),
         &crate::test::primaries(&crate::test::ratio),
     )
     .unwrap();
     let got = calculate(
-        &crate::test::white(&crate::test::float).to_xyz(),
+        &crate::test::white_xyz(&crate::test::float),
         &crate::test::primaries(&crate::test::float),
     )
     .unwrap();
@@ -347,6 +428,26 @@ fn test_accuracy() {
     let want = inversed_copy(&want).unwrap();
     let got = inversed_copy(&got).unwrap();
     let inv_err = calc_diff(want, got);
+
+    panic!("M   error: {:e}\nM⁻¹ error: {:e}", m_err, inv_err);
+}
+
+#[test]
+#[ignore = "Expected to fail. The calculated error is the interesting part."]
+fn test_accuracy_pair() {
+    let want = calculate_pair(
+        &crate::test::white_xyz(&crate::test::ratio),
+        &crate::test::primaries(&crate::test::ratio),
+    )
+    .unwrap();
+    let got = calculate_pair(
+        &crate::test::white_xyz(&crate::test::float),
+        &crate::test::primaries(&crate::test::float),
+    )
+    .unwrap();
+
+    let m_err = calc_diff(want.0, got.0);
+    let inv_err = calc_diff(want.1, got.1);
 
     panic!("M   error: {:e}\nM⁻¹ error: {:e}", m_err, inv_err);
 }

@@ -19,6 +19,8 @@
 
 pub mod matrix;
 
+pub use matrix::calculate_pair;
+
 
 /// Possible errors which can occur when performing calculations.
 #[derive(PartialEq, Eq, Debug)]
@@ -132,7 +134,7 @@ pub(crate) mod test {
         num::rational::Ratio::new_raw(num.0 as i128, num.1 as i128)
     }
 
-    pub fn chromaticity<K: core::fmt::Debug + num_traits::Signed>(
+    fn chromaticity<K: core::fmt::Debug + num_traits::Signed>(
         f: &impl Fn(Ratio) -> K,
         x: Ratio,
         y: Ratio,
@@ -146,6 +148,13 @@ pub(crate) mod test {
     ) -> super::Chromaticity<K> {
         chromaticity(f, (312713, 1000000), (41127, 125000))
     }
+
+    pub fn white_xyz<K: core::fmt::Debug + super::matrix::Scalar>(
+        f: &impl Fn((i32, i32)) -> K,
+    ) -> [K; 3] {
+        white(f).into_xyz()
+    }
+
 
     pub fn primaries<K: core::fmt::Debug + num_traits::Signed>(
         f: &impl Fn((i32, i32)) -> K,
@@ -216,18 +225,33 @@ pub(crate) mod test {
     #[test]
     fn test_calculate_matrix_floats() {
         let f = &float;
-        assert_eq!(
-            Ok(M_F32),
-            super::matrix::calculate(&white(f).into_xyz(), &primaries(f))
-        );
+        let got = super::matrix::calculate(&white_xyz(f), &primaries(f));
+        assert_eq!(Ok(M_F32), got);
+    }
+
+    #[test]
+    fn test_calculate_pair_floats() {
+        let want_inv = [
+            [3.240813, -1.5373088, -0.49858665],
+            [-0.96924305, 1.8759663, 0.041555054],
+            [0.05563835, -0.20400736, 1.0571296],
+        ];
+        let f = &float;
+        let got = super::calculate_pair(&white_xyz(f), &primaries(f));
+        assert_eq!(Ok((M_F32, want_inv)), got);
     }
 
     #[test]
     fn test_calculate_ratio() {
         let f = &ratio;
-        assert_eq!(
-            Ok(M_Q),
-            super::matrix::calculate(&white(f).into_xyz(), &primaries(f))
-        );
+        let got = super::matrix::calculate(&white_xyz(f), &primaries(f));
+        assert_eq!(Ok(M_Q), got);
+    }
+
+    #[test]
+    fn test_calculate_pair_ratio() {
+        let f = &ratio;
+        let got = super::calculate_pair(&white_xyz(f), &primaries(f));
+        assert_eq!(Ok((M_Q, M_INV_Q)), got);
     }
 }
