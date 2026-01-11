@@ -35,15 +35,16 @@ type Scalar = num::rational::Ratio<i128>;
 type Chromaticity = rgb_derivation::Chromaticity<Scalar>;
 
 fn chromaticity(x: (i128, i128), y: (i128, i128)) -> Chromaticity {
-    Chromaticity::new(Scalar::new(x.0, x.1), Scalar::new(y.0, y.1)).unwrap()
+    let x = Scalar::new(x.0, x.1);
+    let y = Scalar::new(y.0, y.1);
+    Chromaticity::new(x, y).unwrap()
 }
 
 fn print_vector(header: &str, vector: &[Scalar; 3]) {
     print!("{}: [", header);
     for (idx, value) in vector.iter().enumerate() {
-        print!("{} {} / {}",
-               if idx == 0 { "" } else { "," },
-               value.numer(), value.denom());
+        let sep = if idx == 0 { "" } else { "," };
+        print!("{sep} {} / {}", value.numer(), value.denom());
     }
     println!(" ]");
 }
@@ -52,29 +53,27 @@ fn print_matrix(header: &str, matrix: &[[Scalar; 3]; 3]) {
     static OPEN: [char; 3] = ['⎡', '⎢', '⎣'];
     static CLOSE: [char; 3] = ['⎤', '⎥', '⎦'];
 
-    fn make_array<T>(f: impl Fn(usize) -> T) -> [T; 3] { [f(0), f(1), f(2)] }
-
-    let formatted = make_array(|row| make_array(|col| {
-        let value = &matrix[row][col];
-        (format!("{}", value.numer()), format!("{}", value.denom()))
-    }));
-    let lengths = make_array(|col| (
+    let formatted = matrix.map(|row| {
+        row.map(|v| (v.numer().to_string(), v.denom().to_string()))
+    });
+    let lengths = [0, 1, 2].map(|col| (
         formatted.iter().map(|row| row[col].0.len()).max().unwrap(),
         formatted.iter().map(|row| row[col].1.len()).max().unwrap(),
     ));
 
-    let indent = header.chars().count();
+    let padding = header.chars().count();
     for (idx, row) in formatted.iter().enumerate() {
         if idx == 1 {
-            print!("{}: {}", header, OPEN[idx]);
+            print!("{header}: {}", OPEN[idx]);
         } else {
-            print!("{:indent$}  {}", "", OPEN[idx], indent = indent);
+            print!("{:padding$}  {}", "", OPEN[idx]);
         }
-        for (idx, value) in row.iter().enumerate() {
-            print!("{comma} {numer:>numer_len$} / {denom:>denom_len$}",
-                   comma = if idx == 0 { "" } else { "," },
-                   numer = value.0, numer_len = lengths[idx].0,
-                   denom = value.1, denom_len = lengths[idx].1);
+        let mut comma = "";
+        for (value, lens) in row.iter().zip(lengths.iter()) {
+            let (numer, denom) = value;
+            let (numer_len, denom_len) = lens;
+            print!("{comma} {numer:>numer_len$} / {denom:>denom_len$}");
+            comma = ",";
         }
         println!(" {}", CLOSE[idx]);
     }
@@ -89,9 +88,11 @@ fn main() {
     ];
 
     let white_xyz = white_xy.into_xyz();
-    let (matrix, inverse) = rgb_derivation::calculate_pair(
-        &white_xyz, &primaries_xy).unwrap();
-    let primaries_xyz = rgb_derivation::matrix::transposed_copy(&matrix);
+    let (matrix, inverse) =
+        rgb_derivation::calculate_pair(&white_xyz, &primaries_xy)
+            .unwrap();
+    let primaries_xyz =
+        rgb_derivation::matrix::transposed_copy(&matrix);
 
     print_vector("sRGB white point (D65)", &white_xyz);
     print_matrix("sRGB primaries", &primaries_xyz);
