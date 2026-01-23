@@ -45,8 +45,8 @@ pub enum Error<K> {
 pub struct Chromaticity<K>(K, K);
 
 impl<K> Chromaticity<K> {
-    pub fn x(&self) -> &K { &self.0 }
-    pub fn y(&self) -> &K { &self.1 }
+    pub const fn x(&self) -> &K { &self.0 }
+    pub const fn y(&self) -> &K { &self.1 }
 
     /// Deconstructs the object into `(x, y)` pair.
     pub fn into_xy(self) -> (K, K) { (self.0, self.1) }
@@ -71,7 +71,7 @@ impl<K: num_traits::Signed> Chromaticity<K> {
     /// Does not check whether the coordinates are positive.  If they aren’t,
     /// other methods (e.g. [`Chromaticity::into_xyz`] may result in undefined
     /// behaviour.
-    pub unsafe fn new_unchecked(x: K, y: K) -> Self { Self(x, y) }
+    pub const unsafe fn new_unchecked(x: K, y: K) -> Self { Self(x, y) }
 }
 
 impl<K: matrix::Scalar> Chromaticity<K>
